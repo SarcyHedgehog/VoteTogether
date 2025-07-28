@@ -1,5 +1,5 @@
 # Name that will appear in the GitHub Actions tab
-name: Deploy Poker Dice to sarcastichedgehog.com
+name: Deploy VoteTogether to sarcastichedgehog.com
 
 on:
   # Run this workflow every time a change is pushed to the main branch
@@ -14,20 +14,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the pokerdice game repository
-      - name: Checkout pokerdice game repository
+      # Step 1: Check out the VoteTogether game repository
+      - name: Checkout VoteTogether game repository
         uses: actions/checkout@v4
         # No path needed, it checks out to the root directory
 
       # Step 2: Create the production config.js file from secrets
-      - name: Create config.js for Poker Dice
+      - name: Create config.js for VoteTogether
         run: |
           echo "Generating config.js from secrets..."
           echo "window.APP_CONFIG = {" > config.js
           echo "  API_KEY: \"${{ secrets.MULTISYNQ_API_KEY }}\"," >> config.js
           echo "  APP_ID: \"${{ secrets.MULTISYNQ_APP_ID }}\"," >> config.js
           # The BASE_URL should be the final production URL
-          echo "  BASE_URL: \"https://sarcastichedgehog.com/dice\"" >> config.js
+          echo "  BASE_URL: \"${{ secrets.MULTISYNQ_BASE_URL }}\"" >> config.js
           echo "};" >> config.js
 
       # Step 3: Checkout your main website repository into a subfolder
@@ -39,11 +39,11 @@ jobs:
           # Use the same Personal Access Token you use for your other games
           token: ${{ secrets.GH_PAGES_DEPLOY_TOKEN }}
 
-      # Step 4: Copy the game files into the website repository's /dice folder
+      # Step 4: Copy the game files into the website repository's /votetogether folder
       - name: Copy game files to website repository
         run: |
           # The target directory on your main website
-          TARGET_DIR="./website_repo/dice"
+          TARGET_DIR="./website_repo/votetogether"
           mkdir -p "$TARGET_DIR"
 
           echo "Copying core files..."
@@ -53,12 +53,8 @@ jobs:
           cp ./config.js "$TARGET_DIR/"
           cp ./config.example.js "$TARGET_DIR/"
           cp ./README.md "$TARGET_DIR/"
-          cp ./LICENSE "$TARGET_DIR/"
 
           echo "Copying asset folders..."
-          if [ -d "./textures" ]; then
-            cp -r ./textures "$TARGET_DIR/"
-          fi
           if [ -d "./icons" ]; then
             cp -r ./icons "$TARGET_DIR/"
           fi
@@ -78,6 +74,6 @@ jobs:
             git config user.name "${GIT_USER_NAME}"
             git config user.email "${GIT_USER_EMAIL}"
             git add .
-            git commit -m "Deploy Poker Dice game update from pokerdice repository"
+            git commit -m "Deploy VoteTogether game update from VoteTogether repository"
             git push origin main
           fi

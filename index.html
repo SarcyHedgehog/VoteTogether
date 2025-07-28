@@ -15,9 +15,13 @@
     <script>
         if (!window.APP_CONFIG) {
             console.warn("config.js not found...");
-            window.APP_CONFIG = { API_KEY: "placeholder", APP_ID: "placeholder" };
+            window.APP_CONFIG = { API_KEY: "placeholder", APP_ID: "placeholder", BASE_URL: "placeholder" };
         }
     </script>
+    <style>
+        .qr-code { transition: all 0.3s ease; }
+        .qr-code.expanded { transform: scale(3); z-index: 50; }
+    </style>
 </head>
 <body class="bg-slate-900 text-white font-sans">
     <div id="app" class="p-4 max-w-lg mx-auto">
@@ -182,7 +186,23 @@
                 return ''; 
             }
             
-            renderHeader() { return `<p class="text-xl text-slate-300">Logged in as: <strong class="text-cyan-400">${this.username}</strong></p>`; }
+            renderHeader() { 
+                const roomCode = window.sessionRoomCode || 'Unknown';
+                return `
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="text-xl text-slate-300">Logged in as: <strong class="text-cyan-400">${this.username}</strong></p>
+                            <p class="text-lg text-slate-400">Room: <strong class="text-amber-400">${roomCode}</strong></p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="copy-room-btn" class="bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg font-bold text-sm transition-transform active:scale-95">
+                                Copy Link
+                            </button>
+                            <div id="qr-code" class="qr-code cursor-pointer bg-white p-1 rounded"></div>
+                        </div>
+                    </div>
+                `;
+            }
             
             renderCurrentQuestion() {
                 const q = this.model.questions[this.model.currentQuestionIndex];
@@ -226,6 +246,15 @@
             
             attachEventListeners() {
                 document.getElementById("claim-host-btn")?.addEventListener("click", () => { this.publish(this.model.id, "claimHostRole", this.viewId); });
+                
+                // Copy room link functionality
+                document.getElementById("copy-room-btn")?.addEventListener("click", () => this.copyRoomInfo());
+                
+                // QR code click to expand/collapse
+                document.getElementById("qr-code")?.addEventListener("click", (e) => {
+                    e.target.classList.toggle('expanded');
+                });
+                
                 document.getElementById("add-question-btn")?.addEventListener("click", () => {
                     const text = document.getElementById("question-text").value.trim();
                     const options = document.getElementById("question-options").value.split(',').map(o => o.trim()).filter(Boolean);
@@ -258,6 +287,31 @@
                         this.currentVote = null; 
                     }); 
                 });
+                
+                // Generate QR code after render
+                this.generateQRCode();
+            }
+            
+            copyRoomInfo() {
+                const roomCode = window.sessionRoomCode;
+                if (!roomCode) return;
+                
+                const baseUrl = window.APP_CONFIG.BASE_URL || window.location.href.split('?')[0];
+                const message = `Join my VoteTogether game!\n\nLink: ${baseUrl}\nRoom Code: ${roomCode}`;
+                
+                navigator.clipboard.writeText(message)
+                    .then(() => alert("Room info copied to clipboard!"))
+                    .catch(e => console.error('Failed to copy', e));
+            }
+            
+            generateQRCode() {
+                const qrContainer = document.getElementById("qr-code");
+                if (!qrContainer) return;
+                
+                const baseUrl = window.APP_CONFIG.BASE_URL || window.location.href.split('?')[0];
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(baseUrl)}`;
+                
+                qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR Code" class="w-10 h-10">`;
             }
         }
         
@@ -269,6 +323,9 @@
             async joinSession(username, passwordHash, roomCode) {
                 this.appContainer.innerHTML = `<h1 class="text-4xl font-bold text-cyan-400 text-center animate-pulse">Joining ${roomCode}...</h1>`;
                 try {
+                    // Store room code globally for use in copy functionality
+                    window.sessionRoomCode = roomCode;
+                    
                     const session = await Session.join({
                         apiKey: config.apiKey, appId: config.appId,
                         name: `votetogether-${roomCode}`, password: "vt-default-password",
