@@ -121,3 +121,29 @@ Record each working milestone here as it is completed. Include the problem, the 
 - Confirmed the working tree retains the `SarcyHedgehog/VoteTogether` GitHub remote and history.
 - Created the `photon-migration` branch.
 - Identified an existing uncommitted `index.html` change containing authentication and reconnection fixes; it is deliberately preserved.
+
+### 2026-08-09 — Behaviour separated from transport
+
+- Committed the final Multisynq authentication and reconnection fixes before changing engines.
+- Preserved that complete implementation as `legacy-multisynq.html`.
+- Extracted poll, voting, host and scoring rules into a transport-independent state engine.
+- Added automated tests for authentication, host authority, duplicate-vote rejection, poll replacement and tied results.
+- Added a local multi-tab transport using browser-native `BroadcastChannel`, `localStorage` and Web Locks.
+- Rebuilt the UI without a framework or runtime CSS dependency.
+- Added an initial Photon Realtime adapter against the documented JavaScript 4.4 API.
+
+The local transport is not presented as a substitute backend. It exists so the complete application and its two-client behaviour can be developed and demonstrated before a Photon App ID and official SDK download are available.
+
+### Photon protocol implemented
+
+The first Photon protocol uses five small event types:
+
+1. authentication request;
+2. targeted authentication result;
+3. command sent to the Photon room's master client;
+4. canonical state snapshot broadcast to the room;
+5. late-join state request.
+
+The room master processes commands through the same pure rules used by local mode. It writes the canonical snapshot to a room property and broadcasts it. When Photon assigns a replacement master, that client can recover the latest room snapshot and rebuild the authenticated actor map from actor properties.
+
+This is sufficient for development parity. It is not yet hardened against a deliberately modified client; custom authentication and trusted validation remain required before public deployment.
