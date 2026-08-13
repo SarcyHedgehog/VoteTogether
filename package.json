@@ -1,0 +1,10 @@
+{
+  "name": "votetogether",
+  "version": "3.0.0-photon",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "serve": "npx serve ."
+  }
+}
